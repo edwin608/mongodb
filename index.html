@@ -1,0 +1,118 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Library CRUD</title>
+    <style>
+        body {
+            font-family: Arial;
+            background: #eee;
+            text-align: center;
+        }
+        input {
+            padding: 8px;
+            margin: 5px;
+        }
+        button {
+            padding: 8px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        table {
+            margin: auto;
+            background: white;
+        }
+        td, th {
+            padding: 10px;
+            border: 1px solid black;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Library Management</h1>
+
+    <input type="hidden" id="id">
+    <input id="name" placeholder="Book Name">
+    <input id="author" placeholder="Author">
+    <button onclick="saveBook()">Save Book</button>
+
+    <h2>Book List</h2>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Author</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="list"></tbody>
+    </table>
+
+    <script>
+        async function loadBooks() {
+            const res = await fetch("/books");
+            const books = await res.json();
+            const list = document.getElementById("list");
+            list.replaceChildren();
+
+            books.forEach(b => {
+                const row = document.createElement("tr");
+
+                [b.name, b.author].forEach(value => {
+                    const td = document.createElement("td");
+                    td.textContent = value;
+                    row.appendChild(td);
+                });
+
+                const td = document.createElement("td");
+
+                const edit = document.createElement("button");
+                edit.textContent = "Edit";
+                edit.onclick = () => {
+                    document.getElementById("id").value = b._id;
+                    document.getElementById("name").value = b.name;
+                    document.getElementById("author").value = b.author;
+                };
+
+                const del = document.createElement("button");
+                del.textContent = "Delete";
+                del.onclick = async () => {
+                    await fetch("/books/" + b._id, {
+                        method: "DELETE"
+                    });
+                    loadBooks();
+                };
+
+                td.append(edit, del);
+                row.appendChild(td);
+                list.appendChild(row);
+            });
+        }
+
+        async function saveBook() {
+            const id = document.getElementById("id").value;
+
+            const book = {
+                name: document.getElementById("name").value,
+                author: document.getElementById("author").value
+            };
+
+            await fetch(id ? "/books/" + id : "/books", {
+                method: id ? "PUT" : "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(book)
+            });
+
+            document.getElementById("id").value = "";
+            document.getElementById("name").value = "";
+            document.getElementById("author").value = "";
+
+            loadBooks();
+        }
+
+        loadBooks();
+    </script>
+</body>
+</html>
